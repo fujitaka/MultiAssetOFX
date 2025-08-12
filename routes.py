@@ -132,26 +132,69 @@ def download_ofx():
             flash('OFXファイルに含める有効なデータがありません。価格が正常に取得された銘柄が必要です。', 'error')
             return redirect(url_for('index'))
         
-        # Generate OFX file
+        # Group results by currency
+        jpy_results = [r for r in valid_results if r.get('currency') == 'JPY']
+        usd_results = [r for r in valid_results if r.get('currency') == 'USD']
+        
         generator = OFXGenerator()
-        ofx_content = generator.generate_ofx(valid_results, target_date)
-        
-        # Determine filename
         date_formatted = target_date.strftime('%Y%m%d')
-        if len(valid_results) == 1:
-            filename = f"SecuOFX_{date_formatted}_{valid_results[0]['code']}.ofx"
-        else:
-            filename = f"SecuOFX_{date_formatted}.ofx"
         
-        # Create file-like object
-        ofx_file = io.BytesIO(ofx_content.encode('utf-8'))
-        ofx_file.seek(0)
+        # If only one currency, generate single file
+        if not jpy_results or not usd_results:
+            ofx_content = generator.generate_ofx(valid_results, target_date)
+            
+            # Determine filename
+            currency_suffix = '_JPY' if jpy_results else '_USD'
+            if len(valid_results) == 1:
+                filename = f"SecuOFX_{date_formatted}_{valid_results[0]['code']}{currency_suffix}.ofx"
+            else:
+                filename = f"SecuOFX_{date_formatted}{currency_suffix}.ofx"
+            
+            # Create file-like object
+            ofx_file = io.BytesIO(ofx_content.encode('utf-8'))
+            ofx_file.seek(0)
+            
+            return send_file(
+                ofx_file,
+                as_attachment=True,
+                download_name=filename,
+                mimetype='application/x-ofx'
+            )
+        
+        # Generate separate files for each currency and create ZIP
+        import zipfile
+        
+        zip_buffer = io.BytesIO()
+        
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            # Generate JPY file
+            if jpy_results:
+                jpy_content = generator.generate_ofx(jpy_results, target_date)
+                if len(jpy_results) == 1:
+                    jpy_filename = f"SecuOFX_{date_formatted}_{jpy_results[0]['code']}_JPY.ofx"
+                else:
+                    jpy_filename = f"SecuOFX_{date_formatted}_JPY.ofx"
+                zip_file.writestr(jpy_filename, jpy_content.encode('utf-8'))
+            
+            # Generate USD file
+            if usd_results:
+                usd_content = generator.generate_ofx(usd_results, target_date)
+                if len(usd_results) == 1:
+                    usd_filename = f"SecuOFX_{date_formatted}_{usd_results[0]['code']}_USD.ofx"
+                else:
+                    usd_filename = f"SecuOFX_{date_formatted}_USD.ofx"
+                zip_file.writestr(usd_filename, usd_content.encode('utf-8'))
+        
+        zip_buffer.seek(0)
+        
+        # Return ZIP file
+        zip_filename = f"SecuOFX_{date_formatted}_通貨別.zip"
         
         return send_file(
-            ofx_file,
+            zip_buffer,
             as_attachment=True,
-            download_name=filename,
-            mimetype='application/x-ofx'
+            download_name=zip_filename,
+            mimetype='application/zip'
         )
     
     except Exception as e:
