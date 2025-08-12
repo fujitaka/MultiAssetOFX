@@ -70,7 +70,7 @@
                                     銘柄コード
                                 </label>
                                 <textarea class="form-control" id="securities" name="securities" rows="4" required 
-                                          placeholder="7203.T, AAPL, 09311017"
+                                          placeholder="7203.T, AAPL, 0331A172"
                                 >{{ request.form.securities or securities|join(',') if securities else '' }}</textarea>
                                 <div class="form-text">
                                     複数の銘柄コードをカンマ区切りで入力してください<br>
@@ -78,7 +78,7 @@
                                         <strong>対応形式:</strong><br>
                                         • 日本株: 7203.T（東証）、1234.O（大証）、9999.N（名証）など<br>
                                         • 米国株/ETF: AAPL, MSFT, VT, VYM など<br>
-                                        • 日本投資信託: 09311017 などの6-8桁コード
+                                        • 日本投資信託: 0331A172, 2931113C などの8桁協会コード
                                     </small>
                                 </div>
                             </div>
@@ -129,8 +129,9 @@
                             <div class="col-md-4 mb-3">
                                 <h5><i class="fas fa-chart-pie text-info me-2"></i>日本投資信託</h5>
                                 <ul class="list-unstyled">
-                                    <li><code>09311017</code> - ファンドコード例</li>
-                                    <li><code>64314081</code> - 6-8桁の数字</li>
+                                    <li><code>0331A172</code> - eMAXIS Slim 先進国債券</li>
+                                    <li><code>2931113C</code> - ニッセイ外国株式</li>
+                                    <li>8桁投資信託協会コード</li>
                                     <li>基準価額（NAV）を取得</li>
                                 </ul>
                             </div>

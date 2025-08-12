@@ -125,77 +125,99 @@ class PriceFetcher:
     def _fetch_japanese_mutual_fund(self, code, target_date):
         """Fetch Japanese mutual fund NAV using web scraping"""
         try:
-            # Try Morningstar Japan first
-            url = f"https://www.morningstar.co.jp/FundData/DetailSnapshot.do?fnc={code}"
+            # Try multiple sources for mutual fund data
+            # First try: Investment Trusts Association of Japan (if 8-digit alphanumeric code)
+            if re.match(r'^[0-9A-Z]{8}$', code):
+                # Try ISIN-based search or investment trust association code
+                urls_to_try = [
+                    f"https://www.toushin.or.jp/search/fund/detail/{code}",
+                    f"https://www.morningstar.co.jp/FundData/DetailSnapshot.do?isin={code}",
+                    f"https://www.morningstar.co.jp/FundData/DetailSnapshot.do?fnc={code}"
+                ]
+            else:
+                # Legacy numeric codes
+                urls_to_try = [
+                    f"https://www.morningstar.co.jp/FundData/DetailSnapshot.do?fnc={code}"
+                ]
             
-            try:
-                response = requests.get(url, timeout=10)
-                response.raise_for_status()
-                
-                soup = BeautifulSoup(response.content, 'html.parser')
-                
-                # Look for fund name
-                name_element = soup.find('h1') or soup.find('title')
-                fund_name = name_element.get_text().strip() if name_element else code
-                
-                # Look for NAV data - search for price patterns in text
-                import re
-                text_content = soup.get_text()
-                
-                # Look for patterns like "基準価額" followed by numbers
-                nav_patterns = re.findall(r'基準価額[：:\s]*([0-9,]+\.?[0-9]*)', text_content)
-                if not nav_patterns:
-                    # Alternative patterns
-                    nav_patterns = re.findall(r'([0-9,]+\.?[0-9]*)\s*円', text_content)
-                
-                if nav_patterns:
-                    try:
-                        # Extract price from the first matching pattern
-                        price_text = nav_patterns[0].replace(',', '')
-                        price = float(price_text)
-                        return {
-                            'name': fund_name,
-                            'price': f"{price:.4f}",
-                            'currency': 'JPY'
-                        }
-                    except (ValueError, IndexError):
-                        pass
-                
-            except Exception as e:
-                logger.warning(f"Morningstar failed for {code}: {str(e)}")
+            for url in urls_to_try:
+                try:
+                    logger.info(f"Trying URL for mutual fund {code}: {url}")
+                    response = requests.get(url, timeout=15, headers={
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                    })
+                    
+                    if response.status_code != 200:
+                        logger.warning(f"HTTP {response.status_code} for {url}")
+                        continue
+                    
+                    soup = BeautifulSoup(response.content, 'html.parser')
+                    
+                    # Look for fund name
+                    name_element = soup.find('h1') or soup.find('title')
+                    fund_name = name_element.get_text().strip() if name_element else f'投資信託 {code}'
+                    
+                    # Look for NAV data - search for price patterns in text
+                    import re
+                    text_content = soup.get_text()
+                    
+                    # Look for patterns like "基準価額" followed by numbers
+                    nav_patterns = re.findall(r'基準価額[：:\s]*([0-9,]+\.?[0-9]*)', text_content)
+                    if not nav_patterns:
+                        # Alternative patterns
+                        nav_patterns = re.findall(r'([0-9,]+\.?[0-9]*)\s*円', text_content)
+                    
+                    if nav_patterns:
+                        try:
+                            # Extract price from the first matching pattern
+                            price_text = nav_patterns[0].replace(',', '')
+                            price = float(price_text)
+                            return {
+                                'name': fund_name,
+                                'price': f"{price:.4f}",
+                                'currency': 'JPY'
+                            }
+                        except (ValueError, IndexError):
+                            continue
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to fetch from {url}: {str(e)}")
+                    continue
             
-            # Fallback: Try using trafilatura for text extraction
-            try:
-                downloaded = trafilatura.fetch_url(url)
-                if downloaded:
-                    text = trafilatura.extract(downloaded)
-                    if text:
-                        import re
-                        # Look for NAV patterns in extracted text
-                        nav_patterns = re.findall(r'基準価額[：:\s]*([0-9,]+\.?[0-9]*)', text)
-                        if not nav_patterns:
-                            nav_patterns = re.findall(r'([0-9,]+\.?[0-9]*)\s*円', text)
-                        
-                        if nav_patterns:
-                            try:
-                                price_text = nav_patterns[0].replace(',', '')
-                                price = float(price_text)
-                                return {
-                                    'name': f'投資信託 {code}',
-                                    'price': f"{price:.4f}",
-                                    'currency': 'JPY'
-                                }
-                            except (ValueError, IndexError):
-                                pass
-            except Exception as e:
-                logger.warning(f"Trafilatura failed for {code}: {str(e)}")
+            # Fallback: Try using trafilatura for text extraction on successful URLs
+            for url in urls_to_try:
+                try:
+                    downloaded = trafilatura.fetch_url(url)
+                    if downloaded:
+                        text = trafilatura.extract(downloaded)
+                        if text:
+                            import re
+                            # Look for NAV patterns in extracted text
+                            nav_patterns = re.findall(r'基準価額[：:\s]*([0-9,]+\.?[0-9]*)', text)
+                            if not nav_patterns:
+                                nav_patterns = re.findall(r'([0-9,]+\.?[0-9]*)\s*円', text)
+                            
+                            if nav_patterns:
+                                try:
+                                    price_text = nav_patterns[0].replace(',', '')
+                                    price = float(price_text)
+                                    return {
+                                        'name': f'投資信託 {code}',
+                                        'price': f"{price:.4f}",
+                                        'currency': 'JPY'
+                                    }
+                                except (ValueError, IndexError):
+                                    continue
+                except Exception as e:
+                    logger.warning(f"Trafilatura failed for {url}: {str(e)}")
+                    continue
             
             # Return error if all methods fail
             return {
-                'name': '—',
+                'name': f'投資信託 {code}',
                 'price': '—',
                 'currency': '—',
-                'error': '投資信託データの取得に失敗しました'
+                'error': '投資信託データの取得に失敗しました（スクレイピング制限の可能性があります）'
             }
         
         except Exception as e:

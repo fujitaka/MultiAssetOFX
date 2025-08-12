@@ -13,7 +13,8 @@ Preferred communication style: Simple, everyday language.
 - **UI Library**: Bootstrap 5 with dark theme support
 - **Styling**: Custom CSS with Font Awesome icons
 - **Language**: Japanese interface with bilingual error handling
-- **Forms**: Server-side form processing with Flash messaging for user feedback
+- **Forms**: Single-page application with integrated input form and results display
+- **User Experience**: Real-time form validation and comprehensive result tables with statistics
 
 ## Backend Architecture
 - **Framework**: Flask web application
@@ -32,8 +33,8 @@ Preferred communication style: Simple, everyday language.
 ## Security Classification System
 - **Japanese Stocks**: Pattern matching for exchange suffixes (.T, .O, .N, .F, .S)
 - **US Securities**: Alphabetic ticker validation
-- **Japanese Mutual Funds**: Numeric fund code recognition
-- **Auto-detection**: Intelligent classification based on input format patterns
+- **Japanese Mutual Funds**: 8-digit alphanumeric Investment Trust Association codes (e.g., 0331A172, 2931113C) and legacy numeric codes
+- **Auto-detection**: Intelligent classification based on input format patterns with support for modern fund identification codes
 
 ## File Generation
 - **OFX Format**: Standards-compliant Open Financial Exchange format generation
