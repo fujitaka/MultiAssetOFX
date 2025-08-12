@@ -50,8 +50,9 @@ class PriceFetcher:
             ticker = yf.Ticker(code)
             
             # Get historical data for the specific date
+            from datetime import timedelta
             start_date = target_date.strftime('%Y-%m-%d')
-            end_date = (target_date.replace(day=target_date.day + 1)).strftime('%Y-%m-%d')
+            end_date = (target_date + timedelta(days=1)).strftime('%Y-%m-%d')
             
             hist = ticker.history(start=start_date, end=end_date)
             
@@ -66,8 +67,11 @@ class PriceFetcher:
             close_price = hist['Close'].iloc[0]
             
             # Get company name
-            info = ticker.info
-            name = info.get('longName') or info.get('shortName') or code
+            try:
+                info = ticker.info
+                name = info.get('longName') or info.get('shortName') or code
+            except:
+                name = code
             
             return {
                 'name': name,
@@ -85,8 +89,9 @@ class PriceFetcher:
             ticker = yf.Ticker(code)
             
             # Get historical data for the specific date
+            from datetime import timedelta
             start_date = target_date.strftime('%Y-%m-%d')
-            end_date = (target_date.replace(day=target_date.day + 1)).strftime('%Y-%m-%d')
+            end_date = (target_date + timedelta(days=1)).strftime('%Y-%m-%d')
             
             hist = ticker.history(start=start_date, end=end_date)
             
@@ -101,8 +106,11 @@ class PriceFetcher:
             close_price = hist['Close'].iloc[0]
             
             # Get company name
-            info = ticker.info
-            name = info.get('longName') or info.get('shortName') or code
+            try:
+                info = ticker.info
+                name = info.get('longName') or info.get('shortName') or code
+            except:
+                name = code
             
             return {
                 'name': name,
@@ -130,23 +138,28 @@ class PriceFetcher:
                 name_element = soup.find('h1') or soup.find('title')
                 fund_name = name_element.get_text().strip() if name_element else code
                 
-                # Look for NAV data (this is a simplified approach)
-                # In a real implementation, you'd need to parse the specific HTML structure
-                nav_elements = soup.find_all(text=lambda text: text and '円' in text and any(c.isdigit() for c in text))
+                # Look for NAV data - search for price patterns in text
+                import re
+                text_content = soup.get_text()
                 
-                if nav_elements:
-                    # Extract price from the first matching element
-                    price_text = nav_elements[0].strip()
-                    import re
-                    price_match = re.search(r'[\d,]+\.?\d*', price_text.replace(',', ''))
-                    
-                    if price_match:
-                        price = float(price_match.group().replace(',', ''))
+                # Look for patterns like "基準価額" followed by numbers
+                nav_patterns = re.findall(r'基準価額[：:\s]*([0-9,]+\.?[0-9]*)', text_content)
+                if not nav_patterns:
+                    # Alternative patterns
+                    nav_patterns = re.findall(r'([0-9,]+\.?[0-9]*)\s*円', text_content)
+                
+                if nav_patterns:
+                    try:
+                        # Extract price from the first matching pattern
+                        price_text = nav_patterns[0].replace(',', '')
+                        price = float(price_text)
                         return {
                             'name': fund_name,
                             'price': f"{price:.4f}",
                             'currency': 'JPY'
                         }
+                    except (ValueError, IndexError):
+                        pass
                 
             except Exception as e:
                 logger.warning(f"Morningstar failed for {code}: {str(e)}")
@@ -156,25 +169,28 @@ class PriceFetcher:
                 downloaded = trafilatura.fetch_url(url)
                 if downloaded:
                     text = trafilatura.extract(downloaded)
-                    if text and '円' in text:
-                        # Simple pattern matching for NAV
+                    if text:
                         import re
-                        price_patterns = re.findall(r'[\d,]+\.?\d*\s*円', text)
-                        if price_patterns:
-                            price_text = price_patterns[0].replace('円', '').replace(',', '').strip()
+                        # Look for NAV patterns in extracted text
+                        nav_patterns = re.findall(r'基準価額[：:\s]*([0-9,]+\.?[0-9]*)', text)
+                        if not nav_patterns:
+                            nav_patterns = re.findall(r'([0-9,]+\.?[0-9]*)\s*円', text)
+                        
+                        if nav_patterns:
                             try:
+                                price_text = nav_patterns[0].replace(',', '')
                                 price = float(price_text)
                                 return {
                                     'name': f'投資信託 {code}',
                                     'price': f"{price:.4f}",
                                     'currency': 'JPY'
                                 }
-                            except ValueError:
+                            except (ValueError, IndexError):
                                 pass
             except Exception as e:
                 logger.warning(f"Trafilatura failed for {code}: {str(e)}")
             
-            # If all methods fail, return mock data structure
+            # Return error if all methods fail
             return {
                 'name': '—',
                 'price': '—',

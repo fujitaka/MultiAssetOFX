@@ -53,14 +53,14 @@
                         </h3>
                     </div>
                     <div class="card-body">
-                        <form method="POST" action="{{ url_for('fetch_prices') }}">
+                        <form method="POST" action="{{ url_for('index') }}">
                             <div class="mb-4">
                                 <label for="date" class="form-label">
                                     <i class="fas fa-calendar me-2"></i>
                                     取得日付
                                 </label>
                                 <input type="date" class="form-control" id="date" name="date" required 
-                                       value="{{ request.form.date or '' }}">
+                                       value="{{ request.form.date or date or '' }}">
                                 <div class="form-text">価格を取得したい日付を選択してください（YYYY-MM-DD形式）</div>
                             </div>
 
@@ -71,7 +71,7 @@
                                 </label>
                                 <textarea class="form-control" id="securities" name="securities" rows="4" required 
                                           placeholder="7203.T, AAPL, 09311017"
-                                >{{ request.form.securities or '' }}</textarea>
+                                >{{ request.form.securities or securities|join(',') if securities else '' }}</textarea>
                                 <div class="form-text">
                                     複数の銘柄コードをカンマ区切りで入力してください<br>
                                     <small>
@@ -140,6 +140,189 @@
             </div>
         </div>
 
+        <!-- Results Section -->
+        {% if show_results and results %}
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-check-circle me-2"></i>
+                            価格取得結果 - {{ date }}
+                        </h3>
+                        <div>
+                            {% set valid_results = results|selectattr('price', 'ne', '—')|selectattr('error', 'none')|list %}
+                            {% if valid_results %}
+                                <form method="POST" action="{{ url_for('download_ofx') }}" class="d-inline">
+                                    <input type="hidden" name="date" value="{{ date }}">
+                                    <input type="hidden" name="securities" value="{{ securities|join(',') }}">
+                                    <button type="submit" class="btn btn-light">
+                                        <i class="fas fa-download me-2"></i>
+                                        OFXダウンロード
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th scope="col">
+                                            <i class="fas fa-code me-2"></i>
+                                            入力銘柄コード
+                                        </th>
+                                        <th scope="col">
+                                            <i class="fas fa-calendar me-2"></i>
+                                            指定日付
+                                        </th>
+                                        <th scope="col">
+                                            <i class="fas fa-building me-2"></i>
+                                            取得銘柄名
+                                        </th>
+                                        <th scope="col" class="text-end">
+                                            <i class="fas fa-yen-sign me-2"></i>
+                                            取得価格
+                                        </th>
+                                        <th scope="col" class="text-center">
+                                            <i class="fas fa-coins me-2"></i>
+                                            通貨
+                                        </th>
+                                        <th scope="col" class="text-center">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            ステータス
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for result in results %}
+                                    <tr class="{% if result.error %}table-warning{% elif result.price == '—' %}table-secondary{% else %}table-success{% endif %}">
+                                        <td>
+                                            <code class="text-primary">{{ result.input_code }}</code>
+                                        </td>
+                                        <td>{{ result.date }}</td>
+                                        <td>
+                                            {% if result.name != '—' %}
+                                                <strong>{{ result.name }}</strong>
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            {% if result.price != '—' %}
+                                                <span class="fw-bold text-success">{{ result.price }}</span>
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            {% if result.currency != '—' %}
+                                                <span class="badge bg-secondary">{{ result.currency }}</span>
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            {% if result.error %}
+                                                <span class="badge bg-warning text-dark" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ result.error }}">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                                    エラー
+                                                </span>
+                                            {% elif result.price != '—' %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>
+                                                    成功
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">
+                                                    <i class="fas fa-minus me-1"></i>
+                                                    データなし
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Statistics -->
+        {% if results %}
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-list-ol fa-2x text-primary mb-2"></i>
+                        <h5 class="card-title">総件数</h5>
+                        <h3 class="text-primary">{{ results|length }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                        <h5 class="card-title">成功</h5>
+                        <h3 class="text-success">{{ results|selectattr('price', 'ne', '—')|selectattr('error', 'none')|list|length }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                        <h5 class="card-title">エラー</h5>
+                        <h3 class="text-warning">{{ results|selectattr('error', 'defined')|list|length }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="fas fa-minus-circle fa-2x text-secondary mb-2"></i>
+                        <h5 class="card-title">データなし</h5>
+                        <h3 class="text-secondary">{{ results|selectattr('price', 'equalto', '—')|selectattr('error', 'none')|list|length }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Error Details -->
+        {% if results %}
+        {% set error_results = results|selectattr('error', 'defined')|list %}
+        {% if error_results %}
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h4 class="card-title mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            エラー詳細
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        {% for result in error_results %}
+                        <div class="alert alert-warning d-flex align-items-center" role="alert">
+                            <i class="fas fa-exclamation-triangle me-3"></i>
+                            <div>
+                                <strong>{{ result.input_code }}</strong>: {{ result.error }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+        {% endif %}
+
         <!-- Footer -->
         <footer class="mt-5 py-4 text-center text-muted">
             <p class="mb-0">
@@ -150,5 +333,12 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize tooltips
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    </script>
 </body>
 </html>

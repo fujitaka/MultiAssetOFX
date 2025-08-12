@@ -10,12 +10,15 @@ import os
 
 logger = logging.getLogger(__name__)
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def index():
-    """Main page with input form"""
-    return render_template('index.html')
+    """Main page with input form and results display"""
+    if request.method == 'GET':
+        return render_template('index.html')
+    
+    # Handle POST request - fetch prices
+    return fetch_prices()
 
-@app.route('/fetch_prices', methods=['POST'])
 def fetch_prices():
     """Fetch prices for given securities and date"""
     try:
@@ -26,20 +29,20 @@ def fetch_prices():
         # Validate inputs
         if not date_str or not securities_str:
             flash('日付と銘柄コードの両方を入力してください。', 'error')
-            return redirect(url_for('index'))
+            return render_template('index.html')
         
         # Validate date format
         try:
             target_date = datetime.strptime(date_str, '%Y-%m-%d')
         except ValueError:
             flash('日付の形式が正しくありません。YYYY-MM-DD形式で入力してください。', 'error')
-            return redirect(url_for('index'))
+            return render_template('index.html')
         
         # Parse securities list
         securities = [sec.strip().upper() for sec in securities_str.split(',') if sec.strip()]
         if not securities:
             flash('有効な銘柄コードを入力してください。', 'error')
-            return redirect(url_for('index'))
+            return render_template('index.html')
         
         # Classify and fetch prices
         fetcher = PriceFetcher()
@@ -79,12 +82,12 @@ def fetch_prices():
                     'error': f'データ取得エラー: {str(e)}'
                 })
         
-        return render_template('results.html', results=results, date=date_str, securities=securities)
+        return render_template('index.html', results=results, date=date_str, securities=securities, show_results=True)
     
     except Exception as e:
         logger.error(f"Error in fetch_prices: {str(e)}")
         flash(f'エラーが発生しました: {str(e)}', 'error')
-        return redirect(url_for('index'))
+        return render_template('index.html')
 
 @app.route('/download_ofx', methods=['POST'])
 def download_ofx():
@@ -96,7 +99,7 @@ def download_ofx():
         
         if not results_data or not date_str:
             flash('OFXファイルの生成に必要なデータがありません。', 'error')
-            return redirect(url_for('index'))
+            return render_template('index.html')
         
         # Parse results data (in practice, you might want to store this in session)
         # For simplicity, re-fetch the data based on the form inputs
@@ -130,7 +133,7 @@ def download_ofx():
         
         if not valid_results:
             flash('OFXファイルに含める有効なデータがありません。', 'error')
-            return redirect(url_for('index'))
+            return render_template('index.html')
         
         # Generate OFX file
         generator = OFXGenerator()
@@ -157,7 +160,7 @@ def download_ofx():
     except Exception as e:
         logger.error(f"Error generating OFX file: {str(e)}")
         flash(f'OFXファイルの生成中にエラーが発生しました: {str(e)}', 'error')
-        return redirect(url_for('index'))
+        return render_template('index.html')
 
 def classify_security(code):
     """Classify security type based on code format"""
