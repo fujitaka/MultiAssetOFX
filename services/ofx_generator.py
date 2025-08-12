@@ -86,7 +86,16 @@ NEWFILEUID:NONE
         """Generate position entry for a security"""
         security_type = security.get('type', 'US_STOCK')
         code = security.get('code', '')
-        price = security.get('price', '0')
+        price_raw = security.get('price', '0')
+        
+        # Ensure price is properly formatted as string
+        try:
+            if isinstance(price_raw, str):
+                price = price_raw
+            else:
+                price = str(float(price_raw))
+        except (ValueError, TypeError):
+            price = '0'
         
         # Determine position type and unique ID type
         if security_type == 'JP_STOCK':

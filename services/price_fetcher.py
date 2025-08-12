@@ -170,14 +170,16 @@ class PriceFetcher:
                     if nav_patterns:
                         try:
                             # Extract price from the first matching pattern
-                            price_text = nav_patterns[0].replace(',', '')
-                            price = float(price_text)
-                            return {
-                                'name': fund_name,
-                                'price': f"{price:.4f}",
-                                'currency': 'JPY'
-                            }
-                        except (ValueError, IndexError):
+                            price_text = nav_patterns[0].replace(',', '').strip()
+                            if price_text and price_text.replace('.', '').isdigit():
+                                price = float(price_text)
+                                if price > 0:  # Ensure positive price
+                                    return {
+                                        'name': fund_name,
+                                        'price': f"{price:.4f}",
+                                        'currency': 'JPY'
+                                    }
+                        except (ValueError, IndexError, AttributeError):
                             continue
                     
                 except Exception as e:
@@ -199,14 +201,16 @@ class PriceFetcher:
                             
                             if nav_patterns:
                                 try:
-                                    price_text = nav_patterns[0].replace(',', '')
-                                    price = float(price_text)
-                                    return {
-                                        'name': f'投資信託 {code}',
-                                        'price': f"{price:.4f}",
-                                        'currency': 'JPY'
-                                    }
-                                except (ValueError, IndexError):
+                                    price_text = nav_patterns[0].replace(',', '').strip()
+                                    if price_text and price_text.replace('.', '').isdigit():
+                                        price = float(price_text)
+                                        if price > 0:  # Ensure positive price
+                                            return {
+                                                'name': f'投資信託 {code}',
+                                                'price': f"{price:.4f}",
+                                                'currency': 'JPY'
+                                            }
+                                except (ValueError, IndexError, AttributeError):
                                     continue
                 except Exception as e:
                     logger.warning(f"Trafilatura failed for {url}: {str(e)}")

@@ -93,17 +93,14 @@ def fetch_prices():
 def download_ofx():
     """Generate and download OFX file"""
     try:
-        # Get results data from form
-        results_data = request.form.get('results_data')
+        # Get data from form
         date_str = request.form.get('date')
-        
-        if not results_data or not date_str:
-            flash('OFXファイルの生成に必要なデータがありません。', 'error')
-            return render_template('index.html')
-        
-        # Parse results data (in practice, you might want to store this in session)
-        # For simplicity, re-fetch the data based on the form inputs
         securities_str = request.form.get('securities', '').strip()
+        
+        if not date_str or not securities_str:
+            flash('OFXファイルの生成に必要なデータがありません。', 'error')
+            return redirect(url_for('index'))
+        
         securities = [sec.strip().upper() for sec in securities_str.split(',') if sec.strip()]
         
         target_date = datetime.strptime(date_str, '%Y-%m-%d')
@@ -119,7 +116,7 @@ def download_ofx():
             
             try:
                 price_data = fetcher.fetch_price(security, security_type, target_date)
-                if price_data.get('price') != '—' and not price_data.get('error'):
+                if price_data.get('price') and price_data.get('price') != '—' and not price_data.get('error'):
                     valid_results.append({
                         'code': security,
                         'name': price_data.get('name'),
@@ -132,8 +129,8 @@ def download_ofx():
                 continue
         
         if not valid_results:
-            flash('OFXファイルに含める有効なデータがありません。', 'error')
-            return render_template('index.html')
+            flash('OFXファイルに含める有効なデータがありません。価格が正常に取得された銘柄が必要です。', 'error')
+            return redirect(url_for('index'))
         
         # Generate OFX file
         generator = OFXGenerator()
@@ -160,7 +157,7 @@ def download_ofx():
     except Exception as e:
         logger.error(f"Error generating OFX file: {str(e)}")
         flash(f'OFXファイルの生成中にエラーが発生しました: {str(e)}', 'error')
-        return render_template('index.html')
+        return redirect(url_for('index'))
 
 def classify_security(code):
     """Classify security type based on code format"""

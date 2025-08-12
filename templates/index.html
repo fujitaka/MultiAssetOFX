@@ -278,7 +278,7 @@
                     <div class="card-body">
                         <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
                         <h5 class="card-title">エラー</h5>
-                        <h3 class="text-warning">{{ results|selectattr('error', 'defined')|list|length }}</h3>
+                        <h3 class="text-warning">{{ results|selectattr('error')|list|length }}</h3>
                     </div>
                 </div>
             </div>
