@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>株式・投資信託 価格取得 → OFX出力アプリ</title>
+    <title>投資OFX</title>
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
@@ -17,9 +17,15 @@
                     <div class="card-body text-center">
                         <h1 class="card-title mb-2">
                             <i class="fas fa-chart-line me-2"></i>
-                            株式・投資信託 価格取得 → OFX出力アプリ
+                            投資OFX
                         </h1>
                         <p class="card-text">日本株・米国株・投資信託の価格を取得し、OFX形式で出力します</p>
+                        <div class="alert alert-warning mt-3 mb-0" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>注意事項：</strong><br>
+                            • 投資信託は未実装<br>
+                            • 日本株と米国株はそれぞれ別に指定してください
+                        </div>
                     </div>
                 </div>
             </div>
