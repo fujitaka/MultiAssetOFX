@@ -75,6 +75,25 @@
                                     <i class="fas fa-list me-2"></i>
                                     銘柄コード
                                 </label>
+                                
+                                <!-- Preset Selection -->
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted">
+                                        <i class="fas fa-bookmark me-1"></i>
+                                        プリセット選択
+                                    </label>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="setPreset('japan')">
+                                            <i class="fas fa-yen-sign me-1"></i>
+                                            日本株プリセット
+                                        </button>
+                                        <button type="button" class="btn btn-outline-success btn-sm" onclick="setPreset('us')">
+                                            <i class="fas fa-dollar-sign me-1"></i>
+                                            米国株プリセット
+                                        </button>
+                                    </div>
+                                </div>
+                                
                                 <textarea class="form-control" id="securities" name="securities" rows="4" required 
                                           placeholder="7203.T, AAPL, 0331A172"
                                 >{{ request.form.securities or securities|join(',') if securities else '' }}</textarea>
