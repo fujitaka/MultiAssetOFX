@@ -365,6 +365,20 @@
         const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
+
+        // Preset functionality
+        function setPreset(type) {
+            const securitiesTextarea = document.getElementById('securities');
+            
+            const presets = {
+                'japan': '1306.T,9202.T,9449.T,9418.T,8267.T,7270.T,7867.T,9201.T,7832.T,3048.T,9505.T,2928.S,7453.T',
+                'us': 'GOOGL,AMZN,AAPL,CSCO,FSLY,MSFT,NVDA,TSLA,VYM,VT'
+            };
+            
+            if (presets[type]) {
+                securitiesTextarea.value = presets[type];
+            }
+        }
     </script>
 </body>
 </html>
