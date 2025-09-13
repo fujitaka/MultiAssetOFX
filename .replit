@@ -44,3 +44,7 @@ args = "uv add yfinance requests beautifulsoup4"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 41309
+externalPort = 3000
