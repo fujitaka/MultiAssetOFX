@@ -179,6 +179,8 @@ class PriceFetcher:
             csv_link = soup.find('a', href=re.compile(r'csv-file-download'))
             if csv_link:
                 href = csv_link.get('href', '')
+                # Handle HTML-escaped ampersands
+                href = href.replace('&amp;', '&')
                 match = re.search(r'associFundCd=([^&]+)', href)
                 if match:
                     assoc_fund_cd = match.group(1)
@@ -235,18 +237,20 @@ class PriceFetcher:
                             break
                 
                 # Search all rows for target date (starting after header if found)
-                target_date_str = target_date.strftime('%Y/%m/%d')
+                # Support multiple date formats: YYYY/MM/DD, YYYY年MM月DD日
+                target_date_str1 = target_date.strftime('%Y/%m/%d')
+                target_date_str2 = target_date.strftime('%Y年%m月%d日')
                 start_idx = header_idx + 1 if header_idx >= 0 else 0
                 
                 for row in all_rows[start_idx:]:
                     if len(row) > max(date_col, nav_col):
                         date_cell = row[date_col].strip()
-                        # Check if this row has a matching date
-                        if date_cell == target_date_str:
+                        # Check if this row has a matching date (support both formats)
+                        if date_cell == target_date_str1 or date_cell == target_date_str2:
                             price_text = row[nav_col].replace(',', '').strip()
                             if price_text.isdigit():
                                 price = int(price_text)
-                                logger.info(f"Found NAV for {code} on {target_date_str}: {price}")
+                                logger.info(f"Found NAV for {code} on {date_cell}: {price}")
                                 return {
                                     'name': fund_name,
                                     'price': str(price),
