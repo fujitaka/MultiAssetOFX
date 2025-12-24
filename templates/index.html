@@ -81,14 +81,22 @@
                                         <i class="fas fa-bookmark me-1"></i>
                                         プリセット選択
                                     </label>
-                                    <div class="d-flex gap-2">
-                                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="setPreset('japan')">
-                                            <i class="fas fa-yen-sign me-1"></i>
-                                            日本株プリセット
-                                        </button>
+                                    <div class="d-flex gap-2 flex-wrap">
                                         <button type="button" class="btn btn-outline-success btn-sm" onclick="setPreset('us')">
                                             <i class="fas fa-dollar-sign me-1"></i>
                                             米国株プリセット
+                                        </button>
+                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="setPreset('japan_all')">
+                                            <i class="fas fa-torii-gate me-1"></i>
+                                            日本プリセット
+                                        </button>
+                                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="setPreset('japan_stock')">
+                                            <i class="fas fa-yen-sign me-1"></i>
+                                            日本株プリセット
+                                        </button>
+                                        <button type="button" class="btn btn-outline-info btn-sm" onclick="setPreset('japan_fund')">
+                                            <i class="fas fa-chart-pie me-1"></i>
+                                            日本投資信託プリセット
                                         </button>
                                     </div>
                                 </div>
@@ -370,8 +378,10 @@
             const securitiesTextarea = document.getElementById('securities');
             
             const presets = {
-                'japan': '1306.T,9202.T,9449.T,9418.T,8267.T,7270.T,7867.T,9201.T,7832.T,3048.T,9505.T,2928.S,7453.T,4755.T',
-                'us': 'GOOGL,AMZN,AAPL,CSCO,FSLY,MSFT,NVDA,TSLA,VYM,VT'
+                'us': 'GOOGL,AMZN,AAPL,CSCO,FSLY,MSFT,NVDA,TSLA,VYM,VT',
+                'japan_all': '1306.T,9202.T,9449.T,9418.T,8267.T,9201.T,7832.T,3048.T,9505.T,2928.S,7453.T,4755.T,JP90C000H1T1,JP90C000GKC6,JP90C0006LG2,JP90C0006LK4,JP90C00055X2,JP90C0002B28,JP90C000HZE8,JP90C0009VF7,JP90C0009VE0',
+                'japan_stock': '1306.T,9202.T,9449.T,9418.T,8267.T,9201.T,7832.T,3048.T,9505.T,2928.S,7453.T,4755.T',
+                'japan_fund': 'JP90C000H1T1,JP90C000GKC6,JP90C0006LG2,JP90C0006LK4,JP90C00055X2,JP90C0002B28,JP90C000HZE8,JP90C0009VF7,JP90C0009VE0'
             };
             
             if (presets[type]) {
