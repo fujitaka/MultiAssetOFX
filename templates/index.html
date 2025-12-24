@@ -19,11 +19,11 @@
                             <i class="fas fa-chart-line me-2"></i>
                             投資OFX
                         </h1>
-                        <p class="card-text">日本株・米国株・投資信託の価格を取得し、OFX形式で出力します</p>
+                        <p class="card-text">日本株・米国株・投資信託・暗号通貨の価格を取得し、OFX形式で出力します</p>
                         <div class="alert alert-info mt-3 mb-0" role="alert">
                             <i class="fas fa-info-circle me-2"></i>
                             <strong>対応銘柄：</strong><br>
-                            • 日本株（東証等）、米国株/ETF、日本投資信託（ISINコード）
+                            • 日本株（東証等）、米国株/ETF、日本投資信託（ISINコード）、暗号通貨（BTC/ETH）
                         </div>
                     </div>
                 </div>
@@ -98,6 +98,10 @@
                                             <i class="fas fa-chart-pie me-1"></i>
                                             日本投資信託プリセット
                                         </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setPreset('crypto')">
+                                            <i class="fab fa-bitcoin me-1"></i>
+                                            暗号通貨プリセット
+                                        </button>
                                     </div>
                                 </div>
                                 
@@ -110,7 +114,8 @@
                                         <strong>対応形式:</strong><br>
                                         • 日本株: 7203.T（東証）、1234.O（大証）、9999.N（名証）など<br>
                                         • 米国株/ETF: AAPL, MSFT, VT, VYM など<br>
-                                        • 日本投資信託: JP90C000GKC6 などのISINコード（12桁、JP始まり）
+                                        • 日本投資信託: JP90C000GKC6 などのISINコード（12桁、JP始まり）<br>
+                                        • 暗号通貨: BTC（ビットコイン）、ETH（イーサリアム）
                                     </small>
                                 </div>
                             </div>
@@ -139,7 +144,7 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <h5><i class="fas fa-yen-sign text-warning me-2"></i>日本株</h5>
                                 <ul class="list-unstyled">
                                     <li><code>7203.T</code> - 東京証券取引所</li>
@@ -149,7 +154,7 @@
                                     <li><code>2468.S</code> - 札幌証券取引所</li>
                                 </ul>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <h5><i class="fas fa-dollar-sign text-success me-2"></i>米国株・ETF</h5>
                                 <ul class="list-unstyled">
                                     <li><code>AAPL</code> - Apple Inc.</li>
@@ -158,13 +163,20 @@
                                     <li><code>VYM</code> - Vanguard High Dividend Yield ETF</li>
                                 </ul>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <h5><i class="fas fa-chart-pie text-info me-2"></i>日本投資信託</h5>
                                 <ul class="list-unstyled">
                                     <li><code>JP90C000GKC6</code> - eMAXIS Slim S&P500</li>
                                     <li><code>JP90C000H1T1</code> - eMAXIS Slim オルカン</li>
                                     <li>ISINコード（12桁、JP始まり）</li>
-                                    <li>基準価額（NAV）を取得</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <h5><i class="fab fa-bitcoin text-warning me-2"></i>暗号通貨</h5>
+                                <ul class="list-unstyled">
+                                    <li><code>BTC</code> - ビットコイン</li>
+                                    <li><code>ETH</code> - イーサリアム</li>
+                                    <li>CoinGecko APIから取得</li>
                                 </ul>
                             </div>
                         </div>
@@ -381,7 +393,8 @@
                 'us': 'GOOGL,AMZN,AAPL,CSCO,MSFT,NVDA,TSLA,VT',
                 'japan_all': '1306.T,9202.T,9449.T,9418.T,8267.T,9201.T,7832.T,3048.T,9505.T,2928.S,7453.T,4755.T,JP90C000H1T1,JP90C000GKC6,JP90C0006LG2,JP90C0006LK4,JP90C00055X2,JP90C0002B28,JP90C000HZE8,JP90C0009VF7,JP90C0009VE0',
                 'japan_stock': '1306.T,9202.T,9449.T,9418.T,8267.T,9201.T,7832.T,3048.T,9505.T,2928.S,7453.T,4755.T',
-                'japan_fund': 'JP90C000H1T1,JP90C000GKC6,JP90C0006LG2,JP90C0006LK4,JP90C00055X2,JP90C0002B28,JP90C000HZE8,JP90C0009VF7,JP90C0009VE0'
+                'japan_fund': 'JP90C000H1T1,JP90C000GKC6,JP90C0006LG2,JP90C0006LK4,JP90C00055X2,JP90C0002B28,JP90C000HZE8,JP90C0009VF7,JP90C0009VE0',
+                'crypto': 'BTC,ETH'
             };
             
             if (presets[type]) {
