@@ -27,14 +27,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Data Sources and APIs
 - **Yahoo Finance API**: Primary data source for Japanese and US stocks via yfinance library
-- **Web Scraping**: Fallback mechanism using BeautifulSoup and trafilatura for mutual fund data
+- **Investment Trusts Association of Japan**: Primary data source for Japanese mutual funds via toushin-lib.fwg.ne.jp
+  - CSV download with full historical data
+  - Date-specific NAV retrieval
 - **Retry Logic**: Configurable retry attempts with exponential backoff for robust data fetching
 
 ## Security Classification System
 - **Japanese Stocks**: Pattern matching for exchange suffixes (.T, .O, .N, .F, .S)
 - **US Securities**: Alphabetic ticker validation
-- **Japanese Mutual Funds**: 8-digit alphanumeric Investment Trust Association codes (e.g., 0331A172, 2931113C) and legacy numeric codes
-- **Auto-detection**: Intelligent classification based on input format patterns with support for modern fund identification codes
+- **Japanese Mutual Funds**: ISIN codes (12 characters starting with JP, e.g., JP90C000GKC6, JP90C000H1T1)
+- **Auto-detection**: Intelligent classification based on input format patterns
 
 ## File Generation
 - **OFX Format**: Standards-compliant Open Financial Exchange format generation
