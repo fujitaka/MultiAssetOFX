@@ -161,6 +161,10 @@ def download_ofx():
 
 def classify_security(code):
     """Classify security type based on code format"""
+    # Cryptocurrencies: BTC, ETH
+    if code in ('BTC', 'ETH'):
+        return 'CRYPTO'
+    
     # Japanese stocks: ####.T/O/N/F/S
     if re.match(r'^\d{4}\.(T|O|N|F|S)$', code):
         return 'JP_STOCK'

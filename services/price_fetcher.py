@@ -25,6 +25,8 @@ class PriceFetcher:
                     return self._fetch_us_stock(code, target_date)
                 elif security_type == 'JP_MUTUALFUND':
                     return self._fetch_japanese_mutual_fund(code, target_date)
+                elif security_type == 'CRYPTO':
+                    return self._fetch_crypto(code, target_date)
                 else:
                     return {
                         'name': '—',
@@ -328,3 +330,105 @@ class PriceFetcher:
             'currency': '—',
             'error': '基準価額の取得に失敗しました'
         }
+    
+    def _fetch_crypto(self, code, target_date):
+        """Fetch cryptocurrency price using CoinGecko API"""
+        try:
+            crypto_map = {
+                'BTC': {'id': 'bitcoin', 'name': 'Bitcoin (BTC)'},
+                'ETH': {'id': 'ethereum', 'name': 'Ethereum (ETH)'}
+            }
+            
+            if code not in crypto_map:
+                return {
+                    'name': f'暗号通貨 {code}',
+                    'price': '—',
+                    'currency': '—',
+                    'error': '対応していない暗号通貨です（BTC、ETHのみ対応）'
+                }
+            
+            crypto_info = crypto_map[code]
+            coin_id = crypto_info['id']
+            coin_name = crypto_info['name']
+            
+            date_str = target_date.strftime('%d-%m-%Y')
+            
+            url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/history"
+            params = {
+                'date': date_str,
+                'localization': 'false'
+            }
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'application/json'
+            }
+            
+            logger.info(f"Fetching {coin_name} price for {date_str} from CoinGecko")
+            
+            response = requests.get(url, params=params, headers=headers, timeout=15)
+            
+            if response.status_code == 429:
+                return {
+                    'name': coin_name,
+                    'price': '—',
+                    'currency': '—',
+                    'error': 'APIレート制限に達しました。しばらく待ってから再試行してください'
+                }
+            
+            if response.status_code != 200:
+                logger.warning(f"CoinGecko API returned HTTP {response.status_code}")
+                return {
+                    'name': coin_name,
+                    'price': '—',
+                    'currency': '—',
+                    'error': f'CoinGecko APIエラー（HTTP {response.status_code}）'
+                }
+            
+            data = response.json()
+            
+            if 'market_data' not in data or 'current_price' not in data.get('market_data', {}):
+                return {
+                    'name': coin_name,
+                    'price': '—',
+                    'currency': '—',
+                    'error': f'指定日（{target_date.strftime("%Y/%m/%d")}）のデータが見つかりません'
+                }
+            
+            jpy_price = data['market_data']['current_price'].get('jpy')
+            
+            if jpy_price is None:
+                return {
+                    'name': coin_name,
+                    'price': '—',
+                    'currency': '—',
+                    'error': 'JPY価格が取得できませんでした'
+                }
+            
+            logger.info(f"Fetched {coin_name} price: {jpy_price} JPY")
+            
+            return {
+                'name': coin_name,
+                'price': f"{jpy_price:.2f}",
+                'currency': 'JPY'
+            }
+        
+        except requests.exceptions.Timeout:
+            logger.error(f"Timeout fetching crypto {code}")
+            return {
+                'name': crypto_map.get(code, {}).get('name', f'暗号通貨 {code}'),
+                'price': '—',
+                'currency': '—',
+                'error': '接続がタイムアウトしました'
+            }
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request error fetching crypto {code}: {str(e)}")
+            return {
+                'name': crypto_map.get(code, {}).get('name', f'暗号通貨 {code}'),
+                'price': '—',
+                'currency': '—',
+                'error': f'ネットワークエラー: {str(e)}'
+            }
+        except Exception as e:
+            logger.error(f"Error fetching crypto {code}: {str(e)}")
+            raise
