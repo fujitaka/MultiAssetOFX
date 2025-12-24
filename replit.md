@@ -1,6 +1,6 @@
 # Overview
 
-This is a financial data application that fetches stock and mutual fund prices and exports them in OFX format. The app supports Japanese stocks (with exchange suffixes), US stocks/ETFs, and Japanese mutual funds. Users input security codes and a target date, and the system automatically classifies the securities, fetches their prices from appropriate data sources, displays results in a table format, and generates downloadable OFX files for financial software integration.
+This is a financial data application that fetches stock, mutual fund, and cryptocurrency prices and exports them in OFX format. The app supports Japanese stocks (with exchange suffixes), US stocks/ETFs, Japanese mutual funds, and cryptocurrencies (BTC, ETH). Users input security codes and a target date, and the system automatically classifies the securities, fetches their prices from appropriate data sources, displays results in a table format, and generates downloadable OFX files for financial software integration.
 
 # User Preferences
 
@@ -30,9 +30,14 @@ Preferred communication style: Simple, everyday language.
 - **Investment Trusts Association of Japan**: Primary data source for Japanese mutual funds via toushin-lib.fwg.ne.jp
   - CSV download with full historical data
   - Date-specific NAV retrieval
+- **CoinGecko API**: Free API for cryptocurrency price data (BTC, ETH)
+  - Historical price endpoint: `/coins/{id}/history?date=DD-MM-YYYY`
+  - No API key required
+  - Returns JPY prices
 - **Retry Logic**: Configurable retry attempts with exponential backoff for robust data fetching
 
 ## Security Classification System
+- **Cryptocurrencies**: BTC (Bitcoin), ETH (Ethereum) - matched before other patterns
 - **Japanese Stocks**: Pattern matching for exchange suffixes (.T, .O, .N, .F, .S)
 - **US Securities**: Alphabetic ticker validation
 - **Japanese Mutual Funds**: ISIN codes (12 characters starting with JP, e.g., JP90C000GKC6, JP90C000H1T1)
