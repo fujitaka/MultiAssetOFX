@@ -88,14 +88,20 @@ NEWFILEUID:NONE
         code = security.get('code', '')
         price_raw = security.get('price', '0')
         
-        # Ensure price is properly formatted as string
+        # Ensure price is properly formatted as number
         try:
             if isinstance(price_raw, str):
-                price = price_raw
+                price_value = float(price_raw.replace(',', ''))
             else:
-                price = str(float(price_raw))
+                price_value = float(price_raw)
         except (ValueError, TypeError):
-            price = '0'
+            price_value = 0.0
+        
+        # For Japanese mutual funds, divide by 10,000 (NAV is per 10,000 units)
+        if security_type == 'JP_MUTUALFUND':
+            price_value = price_value / 10000.0
+        
+        price = str(price_value)
         
         # Determine position type and unique ID type
         if security_type == 'JP_STOCK':
