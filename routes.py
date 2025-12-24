@@ -165,12 +165,8 @@ def classify_security(code):
     if re.match(r'^\d{4}\.(T|O|N|F|S)$', code):
         return 'JP_STOCK'
     
-    # Japanese mutual funds: 8-digit alphanumeric codes (investment trust association codes)
-    if re.match(r'^[0-9A-Z]{8}$', code):
-        return 'JP_MUTUALFUND'
-    
-    # Japanese mutual funds: legacy 6-8 digit numeric codes
-    if re.match(r'^\d{6,8}$', code):
+    # Japanese mutual funds: ISIN codes (12 characters starting with JP)
+    if re.match(r'^JP[0-9A-Z]{10}$', code):
         return 'JP_MUTUALFUND'
     
     # US stocks/ETFs: Alphabetic tickers

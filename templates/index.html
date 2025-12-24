@@ -20,11 +20,10 @@
                             投資OFX
                         </h1>
                         <p class="card-text">日本株・米国株・投資信託の価格を取得し、OFX形式で出力します</p>
-                        <div class="alert alert-warning mt-3 mb-0" role="alert">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            <strong>注意事項：</strong><br>
-                            • 投資信託は未実装<br>
-                            • 日本株と米国株はそれぞれ別に指定してください
+                        <div class="alert alert-info mt-3 mb-0" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>対応銘柄：</strong><br>
+                            • 日本株（東証等）、米国株/ETF、日本投資信託（ISINコード）
                         </div>
                     </div>
                 </div>
@@ -95,7 +94,7 @@
                                 </div>
                                 
                                 <textarea class="form-control" id="securities" name="securities" rows="4" required 
-                                          placeholder="7203.T, AAPL, 0331A172"
+                                          placeholder="7203.T, AAPL, JP90C000GKC6"
                                 >{{ request.form.securities or securities|join(',') if securities else '' }}</textarea>
                                 <div class="form-text">
                                     複数の銘柄コードをカンマ区切りで入力してください<br>
@@ -103,7 +102,7 @@
                                         <strong>対応形式:</strong><br>
                                         • 日本株: 7203.T（東証）、1234.O（大証）、9999.N（名証）など<br>
                                         • 米国株/ETF: AAPL, MSFT, VT, VYM など<br>
-                                        • 日本投資信託: 0331A172, 2931113C などの8桁協会コード
+                                        • 日本投資信託: JP90C000GKC6 などのISINコード（12桁、JP始まり）
                                     </small>
                                 </div>
                             </div>
@@ -154,9 +153,9 @@
                             <div class="col-md-4 mb-3">
                                 <h5><i class="fas fa-chart-pie text-info me-2"></i>日本投資信託</h5>
                                 <ul class="list-unstyled">
-                                    <li><code>0331A172</code> - eMAXIS Slim 先進国債券</li>
-                                    <li><code>2931113C</code> - ニッセイ外国株式</li>
-                                    <li>8桁投資信託協会コード</li>
+                                    <li><code>JP90C000GKC6</code> - eMAXIS Slim S&P500</li>
+                                    <li><code>JP90C000H1T1</code> - eMAXIS Slim オルカン</li>
+                                    <li>ISINコード（12桁、JP始まり）</li>
                                     <li>基準価額（NAV）を取得</li>
                                 </ul>
                             </div>

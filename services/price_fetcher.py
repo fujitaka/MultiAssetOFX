@@ -123,107 +123,200 @@ class PriceFetcher:
             raise
     
     def _fetch_japanese_mutual_fund(self, code, target_date):
-        """Fetch Japanese mutual fund NAV using web scraping"""
+        """Fetch Japanese mutual fund NAV using Investment Trusts Association of Japan website"""
+        import re
+        import io
+        import csv
+        
         try:
-            # Try multiple sources for mutual fund data
-            # First try: Investment Trusts Association of Japan (if 8-digit alphanumeric code)
-            if re.match(r'^[0-9A-Z]{8}$', code):
-                # Try ISIN-based search or investment trust association code
-                urls_to_try = [
-                    f"https://www.toushin.or.jp/search/fund/detail/{code}",
-                    f"https://www.morningstar.co.jp/FundData/DetailSnapshot.do?isin={code}",
-                    f"https://www.morningstar.co.jp/FundData/DetailSnapshot.do?fnc={code}"
-                ]
-            else:
-                # Legacy numeric codes
-                urls_to_try = [
-                    f"https://www.morningstar.co.jp/FundData/DetailSnapshot.do?fnc={code}"
-                ]
+            # Validate ISIN code format (JP followed by 10 alphanumeric characters)
+            if not re.match(r'^JP[0-9A-Z]{10}$', code):
+                return {
+                    'name': f'投資信託 {code}',
+                    'price': '—',
+                    'currency': '—',
+                    'error': 'ISINコード形式が正しくありません（JP + 10桁の英数字）'
+                }
             
-            for url in urls_to_try:
-                try:
-                    logger.info(f"Trying URL for mutual fund {code}: {url}")
-                    response = requests.get(url, timeout=15, headers={
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                    })
-                    
-                    if response.status_code != 200:
-                        logger.warning(f"HTTP {response.status_code} for {url}")
-                        continue
-                    
-                    soup = BeautifulSoup(response.content, 'html.parser')
-                    
-                    # Look for fund name
-                    name_element = soup.find('h1') or soup.find('title')
-                    fund_name = name_element.get_text().strip() if name_element else f'投資信託 {code}'
-                    
-                    # Look for NAV data - search for price patterns in text
-                    import re
-                    text_content = soup.get_text()
-                    
-                    # Look for patterns like "基準価額" followed by numbers
-                    nav_patterns = re.findall(r'基準価額[：:\s]*([0-9,]+\.?[0-9]*)', text_content)
-                    if not nav_patterns:
-                        # Alternative patterns
-                        nav_patterns = re.findall(r'([0-9,]+\.?[0-9]*)\s*円', text_content)
-                    
-                    if nav_patterns:
-                        try:
-                            # Extract price from the first matching pattern
-                            price_text = nav_patterns[0].replace(',', '').strip()
-                            if price_text and price_text.replace('.', '').isdigit():
-                                price = float(price_text)
-                                if price > 0:  # Ensure positive price
-                                    return {
-                                        'name': fund_name,
-                                        'price': f"{price:.4f}",
-                                        'currency': 'JPY'
-                                    }
-                        except (ValueError, IndexError, AttributeError):
-                            continue
-                    
-                except Exception as e:
-                    logger.warning(f"Failed to fetch from {url}: {str(e)}")
-                    continue
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3',
+            }
             
-            # Fallback: Try using trafilatura for text extraction on successful URLs
-            for url in urls_to_try:
-                try:
-                    downloaded = trafilatura.fetch_url(url)
-                    if downloaded:
-                        text = trafilatura.extract(downloaded)
-                        if text:
-                            import re
-                            # Look for NAV patterns in extracted text
-                            nav_patterns = re.findall(r'基準価額[：:\s]*([0-9,]+\.?[0-9]*)', text)
-                            if not nav_patterns:
-                                nav_patterns = re.findall(r'([0-9,]+\.?[0-9]*)\s*円', text)
-                            
-                            if nav_patterns:
-                                try:
-                                    price_text = nav_patterns[0].replace(',', '').strip()
-                                    if price_text and price_text.replace('.', '').isdigit():
-                                        price = float(price_text)
-                                        if price > 0:  # Ensure positive price
-                                            return {
-                                                'name': f'投資信託 {code}',
-                                                'price': f"{price:.4f}",
-                                                'currency': 'JPY'
-                                            }
-                                except (ValueError, IndexError, AttributeError):
-                                    continue
-                except Exception as e:
-                    logger.warning(f"Trafilatura failed for {url}: {str(e)}")
-                    continue
+            # Step 1: Get fund detail page to extract associFundCd and fund name
+            page_url = f"https://toushin-lib.fwg.ne.jp/FdsWeb/FDST030000?isinCd={code}"
+            logger.info(f"Fetching mutual fund page for {code} from toushin-lib.fwg.ne.jp")
             
-            # Return error if all methods fail
+            page_response = requests.get(page_url, timeout=15, headers=headers)
+            
+            if page_response.status_code != 200:
+                logger.warning(f"HTTP {page_response.status_code} for {page_url}")
+                return {
+                    'name': f'投資信託 {code}',
+                    'price': '—',
+                    'currency': '—',
+                    'error': f'投信協会サイトへのアクセスに失敗しました（HTTP {page_response.status_code}）'
+                }
+            
+            soup = BeautifulSoup(page_response.content, 'html.parser')
+            
+            # Extract fund name from title
+            fund_name = f'投資信託 {code}'
+            title_elem = soup.find('title')
+            if title_elem:
+                title_text = title_elem.get_text().strip()
+                if '｜' in title_text:
+                    fund_name = title_text.split('｜')[0].strip()
+                elif '|' in title_text:
+                    fund_name = title_text.split('|')[0].strip()
+            
+            if fund_name == '投信総合検索ライブラリー':
+                fund_name = f'投資信託 {code}'
+            
+            # Extract associFundCd from CSV download link
+            assoc_fund_cd = None
+            csv_link = soup.find('a', href=re.compile(r'csv-file-download'))
+            if csv_link:
+                href = csv_link.get('href', '')
+                match = re.search(r'associFundCd=([^&]+)', href)
+                if match:
+                    assoc_fund_cd = match.group(1)
+            
+            # Try to find associFundCd in page content if not found in link
+            if not assoc_fund_cd:
+                page_text = str(page_response.content)
+                match = re.search(r'associFundCd[=:]([A-Z0-9]{8,})', page_text, re.I)
+                if match:
+                    assoc_fund_cd = match.group(1)
+            
+            if not assoc_fund_cd:
+                logger.warning(f"Could not find associFundCd for {code}")
+                # Fallback: try to get latest NAV from the page
+                return self._fetch_latest_nav_from_page(soup, code, fund_name, target_date)
+            
+            # Step 2: Download CSV with historical data
+            csv_url = f"https://toushin-lib.fwg.ne.jp/FdsWeb/FDST030000/csv-file-download?isinCd={code}&associFundCd={assoc_fund_cd}"
+            logger.info(f"Downloading CSV for {code} with associFundCd={assoc_fund_cd}")
+            
+            csv_response = requests.get(csv_url, timeout=30, headers=headers)
+            
+            if csv_response.status_code != 200:
+                logger.warning(f"CSV download failed with HTTP {csv_response.status_code}")
+                return self._fetch_latest_nav_from_page(soup, code, fund_name, target_date)
+            
+            # Step 3: Parse CSV to find NAV for target date
+            try:
+                # CSV is typically in Shift-JIS encoding
+                csv_content = csv_response.content.decode('shift_jis', errors='replace')
+                all_rows = list(csv.reader(io.StringIO(csv_content)))
+                
+                if not all_rows:
+                    logger.warning(f"Empty CSV for {code}")
+                    return self._fetch_latest_nav_from_page(soup, code, fund_name, target_date)
+                
+                # Find header row and determine column indices
+                header_idx = -1
+                date_col = 0
+                nav_col = 1
+                
+                for i, row in enumerate(all_rows):
+                    if len(row) >= 2:
+                        # Look for header row containing date-related text
+                        row_text = ''.join(row)
+                        if '年月日' in row_text or '日付' in row_text or '基準価額' in row_text:
+                            header_idx = i
+                            # Map column indices by header names
+                            for j, cell in enumerate(row):
+                                if '年月日' in cell or '日付' in cell:
+                                    date_col = j
+                                elif '基準価額' in cell:
+                                    nav_col = j
+                            break
+                
+                # Search all rows for target date (starting after header if found)
+                target_date_str = target_date.strftime('%Y/%m/%d')
+                start_idx = header_idx + 1 if header_idx >= 0 else 0
+                
+                for row in all_rows[start_idx:]:
+                    if len(row) > max(date_col, nav_col):
+                        date_cell = row[date_col].strip()
+                        # Check if this row has a matching date
+                        if date_cell == target_date_str:
+                            price_text = row[nav_col].replace(',', '').strip()
+                            if price_text.isdigit():
+                                price = int(price_text)
+                                logger.info(f"Found NAV for {code} on {target_date_str}: {price}")
+                                return {
+                                    'name': fund_name,
+                                    'price': str(price),
+                                    'currency': 'JPY'
+                                }
+                
+                # Date not found in CSV - it might be a non-trading day
+                return {
+                    'name': fund_name,
+                    'price': '—',
+                    'currency': '—',
+                    'error': f'指定日（{target_date.strftime("%Y/%m/%d")}）のデータが見つかりません（休業日の可能性）'
+                }
+                
+            except Exception as e:
+                logger.warning(f"CSV parsing failed: {e}")
+                return self._fetch_latest_nav_from_page(soup, code, fund_name, target_date)
+        
+        except requests.exceptions.Timeout:
+            logger.error(f"Timeout fetching mutual fund {code}")
             return {
                 'name': f'投資信託 {code}',
                 'price': '—',
                 'currency': '—',
-                'error': '投資信託データの取得に失敗しました（スクレイピング制限の可能性があります）'
+                'error': '接続がタイムアウトしました'
             }
-        
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request error fetching mutual fund {code}: {str(e)}")
+            return {
+                'name': f'投資信託 {code}',
+                'price': '—',
+                'currency': '—',
+                'error': f'ネットワークエラー: {str(e)}'
+            }
         except Exception as e:
             logger.error(f"Error fetching Japanese mutual fund {code}: {str(e)}")
             raise
+    
+    def _fetch_latest_nav_from_page(self, soup, code, fund_name, target_date):
+        """Fallback method to fetch latest NAV from the page (without date filtering)"""
+        import re
+        
+        text_content = soup.get_text()
+        
+        # Pattern 1: Look for 基準価額 followed by numbers
+        nav_patterns = re.findall(r'基準価額[：:\s]*([0-9,]+)', text_content)
+        
+        # Pattern 2: Look for numeric values in yen format near 基準価額
+        if not nav_patterns:
+            nav_patterns = re.findall(r'基準価額.*?([0-9,]+)\s*円', text_content, re.DOTALL)
+        
+        if nav_patterns:
+            try:
+                price_text = nav_patterns[0].replace(',', '').strip()
+                if price_text and price_text.isdigit():
+                    price = int(price_text)
+                    if 100 < price < 1000000:
+                        logger.info(f"Fetched latest NAV for {code}: {price} (date may not match)")
+                        return {
+                            'name': fund_name,
+                            'price': str(price),
+                            'currency': 'JPY',
+                            'error': '最新の基準価額です（指定日のデータではない可能性があります）'
+                        }
+            except (ValueError, IndexError, AttributeError) as e:
+                logger.warning(f"Failed to parse NAV value: {e}")
+        
+        return {
+            'name': fund_name,
+            'price': '—',
+            'currency': '—',
+            'error': '基準価額の取得に失敗しました'
+        }
