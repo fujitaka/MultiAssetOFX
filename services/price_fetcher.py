@@ -170,9 +170,13 @@ class PriceFetcher:
                     fund_name = title_text.split('｜')[0].strip()
                 elif '|' in title_text:
                     fund_name = title_text.split('|')[0].strip()
+                elif title_text and title_text != '投信総合検索ライブラリー':
+                    fund_name = title_text
             
-            if fund_name == '投信総合検索ライブラリー':
+            if not fund_name or fund_name == '投信総合検索ライブラリー':
                 fund_name = f'投資信託 {code}'
+            
+            logger.info(f"Fund name for {code}: {fund_name}")
             
             # Extract associFundCd from CSV download link
             assoc_fund_cd = None
