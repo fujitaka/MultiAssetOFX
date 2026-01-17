@@ -120,6 +120,17 @@
                                 </div>
                             </div>
 
+                            <div class="mb-4">
+                                <label for="account_id" class="form-label">
+                                    <i class="fas fa-id-card me-2"></i>
+                                    口座番号（ACCTID）
+                                </label>
+                                <input type="text" class="form-control" id="account_id" name="account_id" 
+                                       placeholder="00000" 
+                                       value="{{ request.form.account_id or account_id or '00000' }}">
+                                <div class="form-text">OFXファイルに出力する口座番号を入力してください（デフォルト: 00000）</div>
+                            </div>
+
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-primary btn-lg">
                                     <i class="fas fa-search me-2"></i>
@@ -201,6 +212,7 @@
                                 <form method="POST" action="{{ url_for('download_ofx') }}" class="d-inline">
                                     <input type="hidden" name="date" value="{{ date }}">
                                     <input type="hidden" name="securities" value="{{ securities|join(',') }}">
+                                    <input type="hidden" name="account_id" value="{{ request.form.account_id or '00000' }}">
                                     <button type="submit" class="btn btn-light">
                                         <i class="fas fa-download me-2"></i>
                                         OFXダウンロード
@@ -390,15 +402,18 @@
             const securitiesTextarea = document.getElementById('securities');
             
             const presets = {
-                'us': 'GOOGL,AMZN,AAPL,CSCO,MSFT,NVDA,TSLA,VT',
-                'japan_all': '1306.T,9202.T,9449.T,9418.T,8267.T,9201.T,7832.T,3048.T,9505.T,2928.S,7453.T,4755.T,JP90C000H1T1,JP90C000GKC6,JP90C0006LG2,JP90C0006LK4,JP90C00055X2,JP90C0002B28,JP90C000HZE8,JP90C0009VF7,JP90C0009VE0',
-                'japan_stock': '1306.T,9202.T,9449.T,9418.T,8267.T,9201.T,7832.T,3048.T,9505.T,2928.S,7453.T,4755.T',
-                'japan_fund': 'JP90C000H1T1,JP90C000GKC6,JP90C0006LG2,JP90C0006LK4,JP90C00055X2,JP90C0002B28,JP90C000HZE8,JP90C0009VF7,JP90C0009VE0',
-                'crypto': 'BTC,ETH'
+                'us': {securities: 'GOOGL,AMZN,AAPL,CSCO,MSFT,NVDA,TSLA,VT', accountId: '9999998'},
+                'japan_all': {securities: '1306.T,9202.T,9449.T,9418.T,8267.T,9201.T,7832.T,3048.T,9505.T,2928.S,7453.T,4755.T,JP90C000H1T1,JP90C000GKC6,JP90C0006LG2,JP90C0006LK4,JP90C00055X2,JP90C0002B28,JP90C000HZE8,JP90C0009VF7,JP90C0009VE0', accountId: '9999999'},
+                'japan_stock': {securities: '1306.T,9202.T,9449.T,9418.T,8267.T,9201.T,7832.T,3048.T,9505.T,2928.S,7453.T,4755.T', accountId: '9999999'},
+                'japan_fund': {securities: 'JP90C000H1T1,JP90C000GKC6,JP90C0006LG2,JP90C0006LK4,JP90C00055X2,JP90C0002B28,JP90C000HZE8,JP90C0009VF7,JP90C0009VE0', accountId: '9999999'},
+                'crypto': {securities: 'BTC,ETH', accountId: '9999999'}
             };
             
+            const accountIdInput = document.getElementById('account_id');
+            
             if (presets[type]) {
-                securitiesTextarea.value = presets[type];
+                securitiesTextarea.value = presets[type].securities;
+                accountIdInput.value = presets[type].accountId;
             }
         }
     </script>

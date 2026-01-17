@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 class OFXGenerator:
     """Service class to generate OFX files"""
     
-    def generate_ofx(self, securities_data, target_date):
+    def generate_ofx(self, securities_data, target_date, account_id='00000'):
         """Generate OFX content from securities data"""
         try:
             date_formatted = target_date.strftime('%Y%m%d000000[+9:JST]')
@@ -21,7 +21,7 @@ class OFXGenerator:
             ofx_content = self._get_ofx_header(date_formatted)
             
             # Add investment statement section
-            ofx_content += self._get_investment_statement_start(date_formatted, primary_currency)
+            ofx_content += self._get_investment_statement_start(date_formatted, primary_currency, account_id)
             
             # Add position list
             ofx_content += '<INVPOSLIST>\n'
@@ -70,7 +70,7 @@ NEWFILEUID:NONE
 <SIGNONMSGSRSV1><SONRS><STATUS><CODE>0</CODE><SEVERITY>INFO</SEVERITY></STATUS><DTSERVER>{}</DTSERVER><LANGUAGE>JPN</LANGUAGE><FI><ORG>PURSE/0.9</ORG></FI></SONRS></SIGNONMSGSRSV1>
 '''.format(date_formatted)
     
-    def _get_investment_statement_start(self, date_formatted, currency):
+    def _get_investment_statement_start(self, date_formatted, currency, account_id='00000'):
         """Generate investment statement opening"""
         return '''<INVSTMTMSGSRSV1>
 <INVSTMTTRNRS>
@@ -79,8 +79,8 @@ NEWFILEUID:NONE
 <INVSTMTRS>
 <DTASOF>{}</DTASOF>
 <CURDEF>{}</CURDEF>
-<INVACCTFROM><BROKERID>SecuOFX</BROKERID><ACCTID>00000</ACCTID></INVACCTFROM>
-'''.format(date_formatted, currency)
+<INVACCTFROM><BROKERID>SecuOFX</BROKERID><ACCTID>{}</ACCTID></INVACCTFROM>
+'''.format(date_formatted, currency, account_id)
     
     def _get_position_entry(self, security, date_formatted):
         """Generate position entry for a security"""

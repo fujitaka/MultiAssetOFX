@@ -96,6 +96,7 @@ def download_ofx():
         # Get data from form
         date_str = request.form.get('date')
         securities_str = request.form.get('securities', '').strip()
+        account_id = request.form.get('account_id', '00000').strip() or '00000'
         
         if not date_str or not securities_str:
             flash('OFXファイルの生成に必要なデータがありません。', 'error')
@@ -134,7 +135,7 @@ def download_ofx():
         
         # Generate OFX file
         generator = OFXGenerator()
-        ofx_content = generator.generate_ofx(valid_results, target_date)
+        ofx_content = generator.generate_ofx(valid_results, target_date, account_id)
         
         # Determine filename
         date_formatted = target_date.strftime('%Y%m%d')
