@@ -140,9 +140,9 @@ def download_ofx():
         # Determine filename
         date_formatted = target_date.strftime('%Y%m%d')
         if len(valid_results) == 1:
-            filename = f"SecuOFX_{date_formatted}_{valid_results[0]['code']}.ofx"
+            filename = f"MultiAssetOFX_{date_formatted}_{valid_results[0]['code']}.ofx"
         else:
-            filename = f"SecuOFX_{date_formatted}.ofx"
+            filename = f"MultiAssetOFX_{date_formatted}.ofx"
         
         # Create file-like object
         ofx_file = io.BytesIO(ofx_content.encode('utf-8'))

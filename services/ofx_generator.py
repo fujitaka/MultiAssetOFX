@@ -79,7 +79,7 @@ NEWFILEUID:NONE
 <INVSTMTRS>
 <DTASOF>{}</DTASOF>
 <CURDEF>{}</CURDEF>
-<INVACCTFROM><BROKERID>SecuOFX</BROKERID><ACCTID>{}</ACCTID></INVACCTFROM>
+<INVACCTFROM><BROKERID>MultiAssetOFX</BROKERID><ACCTID>{}</ACCTID></INVACCTFROM>
 '''.format(date_formatted, currency, account_id)
     
     def _get_position_entry(self, security, date_formatted):
