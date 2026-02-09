@@ -162,6 +162,10 @@ def download_ofx():
 
 def classify_security(code):
     """Classify security type based on code format"""
+    # DC Trust: dctrust keyword
+    if code == 'DCTRUST':
+        return 'DC_TRUST'
+    
     # Cryptocurrencies: BTC, ETH
     if code in ('BTC', 'ETH'):
         return 'CRYPTO'

@@ -23,7 +23,7 @@
                         <div class="alert alert-info mt-3 mb-0" role="alert">
                             <i class="fas fa-info-circle me-2"></i>
                             <strong>対応銘柄：</strong><br>
-                            • 日本株（東証等）、米国株/ETF、日本投資信託（ISINコード）、暗号通貨（BTC/ETH）
+                            • 日本株（東証等）、米国株/ETF、日本投資信託（ISINコード）、DC信託、暗号通貨（BTC/ETH）
                         </div>
                     </div>
                 </div>
@@ -98,6 +98,10 @@
                                             <i class="fas fa-chart-pie me-1"></i>
                                             日本投資信託プリセット
                                         </button>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="setPreset('dc_trust')">
+                                            <i class="fas fa-landmark me-1"></i>
+                                            DC信託プリセット
+                                        </button>
                                         <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setPreset('crypto')">
                                             <i class="fab fa-bitcoin me-1"></i>
                                             暗号通貨プリセット
@@ -115,6 +119,7 @@
                                         • 日本株: 7203.T（東証）、1234.O（大証）、9999.N（名証）など<br>
                                         • 米国株/ETF: AAPL, MSFT, VT, VYM など<br>
                                         • 日本投資信託: JP90C000GKC6 などのISINコード（12桁、JP始まり）<br>
+                                        • DC信託: DCTRUST（金銭信託みずほ信託外株インデックスＳ）<br>
                                         • 暗号通貨: BTC（ビットコイン）、ETH（イーサリアム）
                                     </small>
                                 </div>
@@ -182,6 +187,16 @@
                                     <li>ISINコード（12桁、JP始まり）</li>
                                 </ul>
                             </div>
+                            <div class="col-md-3 mb-3">
+                                <h5><i class="fas fa-landmark text-primary me-2"></i>DC信託</h5>
+                                <ul class="list-unstyled">
+                                    <li><code>DCTRUST</code> - みずほ信託外株インデックスＳ</li>
+                                    <li>dcplan.co.jpから取得</li>
+                                    <li>直近3営業日のみ対応</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="row">
                             <div class="col-md-3 mb-3">
                                 <h5><i class="fab fa-bitcoin text-warning me-2"></i>暗号通貨</h5>
                                 <ul class="list-unstyled">
@@ -406,6 +421,7 @@
                 'japan_all': {securities: '1306.T,9202.T,9449.T,9418.T,8267.T,9201.T,7832.T,3048.T,9505.T,2928.S,7453.T,4755.T,JP90C000H1T1,JP90C000GKC6,JP90C0006LG2,JP90C0006LK4,JP90C00055X2,JP90C0002B28,JP90C000HZE8,JP90C0009VF7,JP90C0009VE0', accountId: '9999999'},
                 'japan_stock': {securities: '1306.T,9202.T,9449.T,9418.T,8267.T,9201.T,7832.T,3048.T,9505.T,2928.S,7453.T,4755.T', accountId: '9999999'},
                 'japan_fund': {securities: 'JP90C000H1T1,JP90C000GKC6,JP90C0006LG2,JP90C0006LK4,JP90C00055X2,JP90C0002B28,JP90C000HZE8,JP90C0009VF7,JP90C0009VE0', accountId: '9999999'},
+                'dc_trust': {securities: 'DCTRUST', accountId: '9999999'},
                 'crypto': {securities: 'BTC,ETH', accountId: '9999999'}
             };
             

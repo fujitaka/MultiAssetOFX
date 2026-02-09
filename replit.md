@@ -34,9 +34,14 @@ Preferred communication style: Simple, everyday language.
   - Historical price endpoint: `/coins/{id}/history?date=DD-MM-YYYY`
   - No API key required
   - Returns JPY prices
+- **dcplan.co.jp**: DC plan trust NAV data (金銭信託みずほ信託外株インデックスＳ)
+  - Product data page scraping with date matching
+  - Only latest 3 business days available
+  - Code: DCTRUST
 - **Retry Logic**: Configurable retry attempts with exponential backoff for robust data fetching
 
 ## Security Classification System
+- **DC Trust**: DCTRUST keyword - matched first before other patterns
 - **Cryptocurrencies**: BTC (Bitcoin), ETH (Ethereum) - matched before other patterns
 - **Japanese Stocks**: Pattern matching for exchange suffixes (.T, .O, .N, .F, .S)
 - **US Securities**: Alphabetic ticker validation

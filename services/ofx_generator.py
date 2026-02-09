@@ -101,6 +101,10 @@ NEWFILEUID:NONE
         if security_type == 'JP_MUTUALFUND':
             price_value = price_value / 10000.0
         
+        # For DC trust, divide by 10,000 (NAV is per 10,000 units)
+        if security_type == 'DC_TRUST':
+            price_value = price_value / 10000.0
+        
         price = str(price_value)
         
         # Determine position type and unique ID type
@@ -112,6 +116,14 @@ NEWFILEUID:NONE
             pos_type = 'POSMF'
             unique_id = code
             unique_id_type = 'JP:ITAJ'
+        elif security_type == 'DC_TRUST':
+            pos_type = 'POSMF'
+            unique_id = 'DCTRUST'
+            unique_id_type = 'DC:TRUST'
+        elif security_type == 'CRYPTO':
+            pos_type = 'POSSTOCK'
+            unique_id = code
+            unique_id_type = 'CRYPTO'
         else:  # US_STOCK
             pos_type = 'POSSTOCK'
             unique_id = code
@@ -152,6 +164,14 @@ NEWFILEUID:NONE
             info_type = 'MFINFO'
             unique_id = code
             unique_id_type = 'JP:ITAJ'
+        elif security_type == 'DC_TRUST':
+            info_type = 'MFINFO'
+            unique_id = 'DCTRUST'
+            unique_id_type = 'DC:TRUST'
+        elif security_type == 'CRYPTO':
+            info_type = 'STOCKINFO'
+            unique_id = code
+            unique_id_type = 'CRYPTO'
         else:  # US_STOCK
             info_type = 'STOCKINFO'
             unique_id = code

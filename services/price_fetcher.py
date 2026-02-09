@@ -27,6 +27,8 @@ class PriceFetcher:
                     return self._fetch_japanese_mutual_fund(code, target_date)
                 elif security_type == 'CRYPTO':
                     return self._fetch_crypto(code, target_date)
+                elif security_type == 'DC_TRUST':
+                    return self._fetch_dc_trust(code, target_date)
                 else:
                     return {
                         'name': '—',
@@ -331,6 +333,153 @@ class PriceFetcher:
             'error': '基準価額の取得に失敗しました'
         }
     
+    def _fetch_dc_trust(self, code, target_date):
+        """Fetch DC plan trust NAV from dcplan.co.jp"""
+        import re
+        
+        try:
+            url = "https://www.dcplan.co.jp/product/data"
+            params = {
+                'providerNo': 'g6s85CnQhEwiTksSm8rtrMwzBTwT2hf7ACxpYwoJeTU',
+                'fid': '01',
+                'iid': 'KKK'
+            }
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3',
+            }
+            
+            logger.info(f"Fetching DC trust data from dcplan.co.jp for date {target_date.strftime('%Y/%m/%d')}")
+            
+            response = requests.get(url, params=params, timeout=15, headers=headers)
+            
+            if response.status_code != 200:
+                return {
+                    'name': '金銭信託みずほ信託外株インデックスＳ',
+                    'price': '—',
+                    'currency': '—',
+                    'error': f'dcplan.co.jpへのアクセスに失敗しました（HTTP {response.status_code}）'
+                }
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            fund_name = '金銭信託みずほ信託外株インデックスＳ'
+            h2 = soup.find('h2')
+            if h2:
+                h2_text = h2.get_text().strip()
+                if h2_text:
+                    fund_name = h2_text
+            
+            target_date_variants = [
+                f"{target_date.year}年{target_date.month}月{target_date.day}日",
+                f"{target_date.year}年{target_date.month:02d}月{target_date.day:02d}日",
+            ]
+            
+            def parse_jp_date(text):
+                m = re.search(r'(\d{4})年(\d{1,2})月(\d{1,2})日', text)
+                if m:
+                    try:
+                        return datetime(int(m.group(1)), int(m.group(2)), int(m.group(3))).date()
+                    except ValueError:
+                        pass
+                return None
+            
+            target_date_obj = target_date.date() if hasattr(target_date, 'date') else target_date
+            
+            tables = soup.find_all('table')
+            
+            for table in tables:
+                rows = table.find_all('tr')
+                for row in rows:
+                    cells = row.find_all(['td', 'th'])
+                    cell_texts = [c.get_text().strip() for c in cells]
+                    
+                    row_has_date = False
+                    for text in cell_texts:
+                        parsed = parse_jp_date(text)
+                        if parsed and parsed == target_date_obj:
+                            row_has_date = True
+                            break
+                        for variant in target_date_variants:
+                            if variant in text:
+                                row_has_date = True
+                                break
+                        if row_has_date:
+                            break
+                    
+                    if row_has_date:
+                        for other_text in cell_texts:
+                            price_match = re.search(r'([0-9,]+)円', other_text)
+                            if price_match:
+                                price_str = price_match.group(1).replace(',', '')
+                                if price_str.isdigit():
+                                    price = int(price_str)
+                                    logger.info(f"Found DC trust NAV for {target_date_obj}: {price}")
+                                    return {
+                                        'name': fund_name,
+                                        'price': str(price),
+                                        'currency': 'JPY'
+                                    }
+            
+            all_text = soup.get_text()
+            
+            all_page_dates = re.findall(r'\d{4}年\d{1,2}月\d{1,2}日', all_text)
+            for page_date_str in all_page_dates:
+                parsed = parse_jp_date(page_date_str)
+                if parsed and parsed == target_date_obj:
+                    idx = all_text.find(page_date_str)
+                    nearby = all_text[idx:idx+200]
+                    price_match = re.search(r'([0-9,]+)円', nearby)
+                    if price_match:
+                        price_str = price_match.group(1).replace(',', '')
+                        if price_str.isdigit():
+                            price = int(price_str)
+                            logger.info(f"Found DC trust NAV (text fallback) for {target_date_obj}: {price}")
+                            return {
+                                'name': fund_name,
+                                'price': str(price),
+                                'currency': 'JPY'
+                            }
+            
+            dates_found = re.findall(r'\d{4}年\d{1,2}月\d{1,2}日', all_text)
+            available_dates = list(set(dates_found))
+            
+            if available_dates:
+                dates_str = '、'.join(sorted(available_dates))
+                return {
+                    'name': fund_name,
+                    'price': '—',
+                    'currency': '—',
+                    'error': f'指定日（{target_date_str}）のデータが見つかりません。取得可能な日付: {dates_str}'
+                }
+            
+            return {
+                'name': fund_name,
+                'price': '—',
+                'currency': '—',
+                'error': f'指定日（{target_date_str}）のデータが見つかりません（直近3営業日のみ取得可能）'
+            }
+        
+        except requests.exceptions.Timeout:
+            return {
+                'name': '金銭信託みずほ信託外株インデックスＳ',
+                'price': '—',
+                'currency': '—',
+                'error': '接続がタイムアウトしました'
+            }
+        except requests.exceptions.RequestException as e:
+            return {
+                'name': '金銭信託みずほ信託外株インデックスＳ',
+                'price': '—',
+                'currency': '—',
+                'error': f'ネットワークエラー: {str(e)}'
+            }
+        except Exception as e:
+            logger.error(f"Error fetching DC trust: {str(e)}")
+            raise
+
     def _fetch_crypto(self, code, target_date):
         """Fetch cryptocurrency price using CoinGecko API"""
         try:
